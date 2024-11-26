@@ -5,14 +5,18 @@ import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
-import javax.persistence.TypedQuery;
 import java.util.List;
 
 @Repository
 public class UserDaoImp implements UserDao {
 
-    @Autowired
+
     private SessionFactory sessionFactory;
+
+    @Autowired
+    public UserDaoImp(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
+    }
 
     @Override
     public void add(User user) {
@@ -22,19 +26,18 @@ public class UserDaoImp implements UserDao {
     @Override
     @SuppressWarnings("unchecked")
     public List<User> listUsers() {
-        TypedQuery<User> query = sessionFactory.getCurrentSession().createQuery("from User");
-        return query.getResultList();
+        return sessionFactory.getCurrentSession()
+                .createQuery("from User")
+                .getResultList();
     }
 
     @Override
     public User findUserByCarModelAndSerial(String carModel, int carSerial) {
-        TypedQuery<User> query = sessionFactory.getCurrentSession()
-                .createQuery("FROM User u JOIN FETCH u.car c " +
-                             "WHERE c.model = :carModel AND c.series = :carSerial", User.class);
-        query.setParameter("carModel", carModel);
-        query.setParameter("carSerial", carSerial);
-
-        List<User> users = query.getResultList();
-        return users.isEmpty() ? null : users.get(0);
+        return sessionFactory.getCurrentSession()
+                .createQuery("FROM User u WHERE u.car.model = :carModel"
+                             + " AND u.car.series = :carSerial", User.class)
+                .setParameter("carModel", carModel)
+                .setParameter("carSerial", carSerial)
+                .getSingleResult();
     }
 }
